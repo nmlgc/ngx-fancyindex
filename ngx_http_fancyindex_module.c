@@ -52,7 +52,7 @@ typedef struct {
 
 
 #define NGX_HTTP_FANCYINDEX_PREALLOCATE  50
-#define NGX_HTTP_FANCYINDEX_NAME_LEN     50
+#define NGX_HTTP_FANCYINDEX_NAME_LEN     256
 
 
 /**
@@ -565,9 +565,9 @@ make_content_buf(
             + ngx_sizeof_ssz("\">")
             + entry[i].name.len + entry[i].utf_len
             + NGX_HTTP_FANCYINDEX_NAME_LEN + ngx_sizeof_ssz("&gt;")
-            + ngx_sizeof_ssz("</a></td><td>")
+            + ngx_sizeof_ssz("</a></td><td class=\"num\">")
             + 20 /* File size */
-            + ngx_sizeof_ssz("</td><td>")
+            + ngx_sizeof_ssz("</td><td></td><td>")
             + ngx_sizeof_ssz(" 28-Sep-1970 12:00 ")
             + ngx_sizeof_ssz("</td></tr>\n")
             + 2 /* CR LF */
@@ -638,7 +638,7 @@ make_content_buf(
         }
 
         if (len > NGX_HTTP_FANCYINDEX_NAME_LEN) {
-            b->last = ngx_cpymem_ssz(last, "..&gt;</a></td><td>");
+            b->last = ngx_cpymem_ssz(last, "..&gt;</a></td><td class=\"num\">");
 
         } else {
             if (entry[i].dir && NGX_HTTP_FANCYINDEX_NAME_LEN - len > 0) {
@@ -646,14 +646,14 @@ make_content_buf(
                 len++;
             }
 
-            b->last = ngx_cpymem_ssz(b->last, "</a></td><td>");
+            b->last = ngx_cpymem_ssz(b->last, "</a></td><td class=\"num\">");
         }
 
         if (alcf->exact_size) {
             if (entry[i].dir) {
                 *b->last++ = '-';
             } else {
-                b->last = ngx_sprintf(b->last, "%19O", entry[i].size);
+                b->last = ngx_sprintf(b->last, "<tt>%19O</tt>", entry[i].size);
             }
 
         } else {
@@ -691,17 +691,17 @@ make_content_buf(
                 }
 
                 if (scale) {
-                    b->last = ngx_sprintf(b->last, "%6i%c", size, scale);
+                    b->last = ngx_sprintf(b->last, "<tt>%6i%c</tt>", size, scale);
 
                 } else {
-                    b->last = ngx_sprintf(b->last, " %6i", size);
+                    b->last = ngx_sprintf(b->last, "<tt> %6i</tt>", size);
                 }
             }
         }
 
         ngx_gmtime(entry[i].mtime + tp->gmtoff * 60 * alcf->localtime, &tm);
 
-        b->last = ngx_sprintf(b->last, "</td><td>%02d-%s-%d %02d:%02d</td></tr>",
+        b->last = ngx_sprintf(b->last, "</td><td></td><td>%02d-%s-%d %02d:%02d</td></tr>",
                               tm.ngx_tm_mday,
                               months[tm.ngx_tm_mon - 1],
                               tm.ngx_tm_year,
