@@ -7,6 +7,9 @@ static const u_char t01_head1[] = ""
 "<head>"
 "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>"
 "<style type=\"text/css\">"
+"body,html {"
+"background:#fff;"
+"}"
 "tr.e {"
 "background:#f4f4f4;"
 "}"
@@ -57,19 +60,21 @@ static const u_char t06_list1[] = ""
 "\n"
 "<thead>"
 "<tr>"
-"<th width=\"55%\">File Name</th>"
-"<th>File&nbsp;Size</th>"
+"<th width=\"55%\"><a href=\"?C=N&O=A\">File&nbsp;Name</a>&nbsp;<a href=\"?C=N&O=D\">&nbsp;↓&nbsp;</a></th>"
+"<th><a href=\"?C=S&O=A\">File&nbsp;Size</a>&nbsp;<a href=\"?C=S&O=D\">&nbsp;↓&nbsp;</a></th>"
 "<th width=\"20%\"></th>"
-"<th width=\"25%\">Date</th>"
+"<th width=\"25%\"><a href=\"?C=M&O=A\">Date</a>&nbsp;<a href=\"?C=M&O=D\">&nbsp;↓&nbsp;</a></th>"
 "</tr>"
 "</thead>"
 "\n"
 "<tbody>"
+;
+static const u_char t_parentdir_entry[] = ""
 "<tr class=\"o\">"
-"<td><a href=\"../\">../</a></td>"
-"<td class=\"num\">-</td>"
+"<td><a href=\"../?C=N&amp;O=A\">../</a></td>"
+"<td class=\"num\"></td>"
 "<td></td>"
-"<td>-</td>"
+"<td></td>"
 "</tr>"
 ;
 static const u_char t07_list2[] = ""
@@ -83,6 +88,7 @@ static const u_char t08_foot1[] = ""
 #define NFI_TEMPLATE_SIZE (0 \
 	+ nfi_sizeof_ssz(t05_body2) \
 	+ nfi_sizeof_ssz(t06_list1) \
+	+ nfi_sizeof_ssz(t_parentdir_entry) \
 	+ nfi_sizeof_ssz(t07_list2) \
 	+ nfi_sizeof_ssz(t08_foot1) \
 	+ nfi_sizeof_ssz(t01_head1) \
