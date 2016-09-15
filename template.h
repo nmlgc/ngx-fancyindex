@@ -39,7 +39,7 @@ static const u_char t01_head1[] = ""
 ;
 static const u_char t02_head2[] = ""
 "\n"
-"<title>Index of"
+"<title>Index of&#x20;"
 ;
 static const u_char t03_head3[] = ""
 "</title>"
@@ -48,7 +48,7 @@ static const u_char t03_head3[] = ""
 ;
 static const u_char t04_body1[] = ""
 "<body>"
-"<h1>Index of"
+"<h1>Index of&#x20;"
 ;
 static const u_char t05_body2[] = ""
 "</h1>"
