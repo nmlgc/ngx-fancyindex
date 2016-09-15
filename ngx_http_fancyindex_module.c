@@ -906,6 +906,7 @@ make_content_buf(
                                  "\">../</a></td>"
                                  "<td></td>"
                                  "<td></td>"
+                                 "<td></td>"
                                  "</tr>");
     }
 
