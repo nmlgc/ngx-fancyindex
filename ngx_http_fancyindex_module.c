@@ -152,6 +152,7 @@ typedef struct {
     ngx_flag_t exact_size;   /**< Sizes are sent always in bytes. */
     ngx_uint_t name_length;  /**< Maximum length of file names in bytes. */
     ngx_flag_t hide_symlinks;/**< Hide symbolic links in listings. */
+    ngx_flag_t show_path;    /**< Whether to display or not the path + '</h1>' after the header */
 
     ngx_str_t  header;       /**< File name for header, or empty if none. */
     ngx_str_t  footer;       /**< File name for footer, or empty if none. */
@@ -337,6 +338,13 @@ static ngx_command_t  ngx_http_fancyindex_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_fancyindex_loc_conf_t, hide_symlinks),
+      NULL },
+
+    { ngx_string("fancyindex_show_path"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_fancyindex_loc_conf_t, show_path),
       NULL },
 
     { ngx_string("fancyindex_time_format"),
@@ -711,13 +719,21 @@ make_content_buf(
     /*
      * Calculate needed buffer length.
      */
-    len = r->uri.len
-        + ngx_sizeof_ssz(t05_body2)
-        + ngx_sizeof_ssz(t06_list1)
-        + ngx_sizeof_ssz(t_parentdir_entry)
-        + ngx_sizeof_ssz(t07_list2)
-        + ngx_fancyindex_timefmt_calc_size (&alcf->time_format) * entries.nelts
-        ;
+    if (alcf->show_path)
+        len = r->uri.len
+          + ngx_sizeof_ssz(t05_body2)
+          + ngx_sizeof_ssz(t06_list1)
+          + ngx_sizeof_ssz(t_parentdir_entry)
+          + ngx_sizeof_ssz(t07_list2)
+          + ngx_fancyindex_timefmt_calc_size (&alcf->time_format) * entries.nelts
+          ;
+   else
+        len = r->uri.len
+          + ngx_sizeof_ssz(t06_list1)
+          + ngx_sizeof_ssz(t_parentdir_entry)
+          + ngx_sizeof_ssz(t07_list2)
+          + ngx_fancyindex_timefmt_calc_size (&alcf->time_format) * entries.nelts
+          ;
 
     /*
      * If we are a the root of the webserver (URI =  "/" --> length of 1),
@@ -741,6 +757,8 @@ make_content_buf(
         len += ngx_sizeof_ssz("<tr><td><a href=\"")
             + entry[i].name.len + entry[i].escape /* Escaped URL */
             + ngx_sizeof_ssz("?C=x&amp;O=y") /* URL sorting arguments */
+            + ngx_sizeof_ssz("\" title=\"")
+            + entry[i].name.len + entry[i].utf_len
             + ngx_sizeof_ssz("\">")
             + entry[i].name.len + entry[i].utf_len
             + alcf->name_length + ngx_sizeof_ssz("&gt;")
@@ -843,8 +861,13 @@ make_content_buf(
                   sort_cmp_func);
     }
 
-    b->last = ngx_cpymem_str(b->last, r->uri);
-    b->last = ngx_cpymem_ssz(b->last, t05_body2);
+    /* Display the path, if needed */
+    if (alcf->show_path){
+        b->last = ngx_cpymem_str(b->last, r->uri);
+        b->last = ngx_cpymem_ssz(b->last, t05_body2);
+    }
+
+    /* Open the <table> tag */
     b->last = ngx_cpymem_ssz(b->last, t06_list1);
 
     tp = ngx_timeofday();
@@ -890,6 +913,9 @@ make_content_buf(
             }
         }
 
+        *b->last++ = '"';
+        b->last = ngx_cpymem_ssz(b->last, " title=\"");
+        b->last = ngx_cpymem_str(b->last, entry[i].name);
         *b->last++ = '"';
         *b->last++ = '>';
 
@@ -1038,8 +1064,7 @@ ngx_http_fancyindex_handler(ngx_http_request_t *r)
     r->headers_out.content_type.data = (u_char *) "text/html";
 
     rc = ngx_http_send_header(r);
-
-    if (rc != NGX_OK || r->header_only)
+    if (rc == NGX_ERROR || rc > NGX_OK || r->header_only)
         return rc;
 
     if (alcf->header.len > 0) {
@@ -1315,6 +1340,7 @@ ngx_http_fancyindex_create_loc_conf(ngx_conf_t *cf)
     conf->exact_size    = NGX_CONF_UNSET;
     conf->ignore        = NGX_CONF_UNSET_PTR;
     conf->hide_symlinks = NGX_CONF_UNSET;
+    conf->show_path     = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -1332,6 +1358,7 @@ ngx_http_fancyindex_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_uint_value(conf->default_sort, prev->default_sort, NGX_HTTP_FANCYINDEX_SORT_CRITERION_NAME);
     ngx_conf_merge_value(conf->localtime, prev->localtime, 0);
     ngx_conf_merge_value(conf->exact_size, prev->exact_size, 1);
+    ngx_conf_merge_value(conf->show_path, prev->show_path, 1);
     ngx_conf_merge_uint_value(conf->name_length, prev->name_length, 50);
 
     ngx_conf_merge_str_value(conf->header, prev->header, "");
@@ -1341,6 +1368,13 @@ ngx_http_fancyindex_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_ptr_value(conf->ignore, prev->ignore, NULL);
     ngx_conf_merge_value(conf->hide_symlinks, prev->hide_symlinks, 0);
+
+    /* Just make sure we haven't disabled the show_path directive without providing a custom header */
+    if (conf->show_path == 0 && conf->header.len == 0)
+    {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "FancyIndex : cannot set show_path to off without providing a custom header !");
+        return NGX_CONF_ERROR;
+    }
 
     return NGX_CONF_OK;
 }

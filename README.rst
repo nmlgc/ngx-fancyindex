@@ -2,8 +2,8 @@
 Nginx Fancy Index module
 ========================
 
-.. image:: https://drone.io/github.com/aperezdc/ngx-fancyindex/status.png
-   :target: https://drone.io/github.com/aperezdc/ngx-fancyindex/latest
+.. image:: https://travis-ci.org/aperezdc/ngx-fancyindex.svg?branch=master
+   :target: https://travis-ci.org/aperezdc/ngx-fancyindex
    :alt: Build Status
 
 .. contents::
@@ -55,6 +55,10 @@ Building
     $ cd nginx-?.?.?
     $ ./configure --add-module=../nginx-fancyindex-?.?.? \
        [--with-http_addition_module] [extra desired options]
+
+   Since version 0.4.0, the module can also be built as a
+   `dynamic module <https://www.nginx.com/resources/wiki/extending/converting/>`_,
+   using ``--add-dynamic-module=…`` instead.
 
 4. Build and install the software::
 
@@ -175,6 +179,19 @@ fancyindex_header
 
 .. note:: Using this directive needs the ngx_http_addition_module_ built
    into Nginx.
+
+fancyindex_show_path
+~~~~~~~~~~~~~~~~~
+:Syntax: *fancyindex_show_path* [*on* | *off*]
+:Default: fancyindex_show_path on
+:Context: http, server, location
+:Description:
+  Whether to output or not the path and the closing </h1> tag after the header.
+  This is useful when you want to handle the path displaying with a PHP script
+  for example.
+
+.. warning:: This directive can be turned off only if a custom header is provided
+   using fancyindex_header.
 
 fancyindex_ignore
 ~~~~~~~~~~~~~~~~~
